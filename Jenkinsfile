@@ -44,7 +44,7 @@ pipeline {
 
         }
 
-        stage['Copy to Remote Server'] {
+        stage ('Copy to Remote Server') {
             steps {
                 // 원격 명령 실행
                 sshagent(credentials: [env.SSH_CREDENTIALS_ID]) {
