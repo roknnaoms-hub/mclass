@@ -44,14 +44,17 @@ pipeline {
 
         }
 
+        // Provision ~/.ssh/known_hosts on the Jenkins agent from an independently
+        // verified host key. Missing/changed keys must stop deployment.
+        // Never use ssh-keyscan during this job as a substitute for verification.
         stage ('Copy to Remote Server') {
             steps {
                 // 원격 명령 실행
                 sshagent(credentials: [env.SSH_CREDENTIALS_ID]) {
                     // 배포 디렉토리 생성 (없으면)
-                    sh "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_USER}@${REMOTE_HOST} \"mkdir -p ${REMOTE_DIR}\""
+                    sh "ssh -o StrictHostKeyChecking=yes ${REMOTE_USER}@${REMOTE_HOST} \"mkdir -p ${REMOTE_DIR}\""
                     // JAR과 Dockerfile을 원격 서버로 복사
-                    sh "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${JAR_FILE_NAME} Dockerfile ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
+                    sh "scp -o StrictHostKeyChecking=yes ${JAR_FILE_NAME} Dockerfile ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
                     
                 }
             }
@@ -61,7 +64,7 @@ pipeline {
             steps {
                 sshagent(credentials: [env.SSH_CREDENTIALS_ID]) {
                     sh """
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_USER}@${REMOTE_HOST} << ENDSSH
+ssh -o StrictHostKeyChecking=yes ${REMOTE_USER}@${REMOTE_HOST} << ENDSSH
     cd ${REMOTE_DIR} || exit 1
     docker rm -f ${CONTAINER_NAME} || true
     docker build -t ${DOCKER_IMAGE} .
